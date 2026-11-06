@@ -1,0 +1,35 @@
+{
+  "name": "css-invites",
+  "version": "0.1.0",
+  "description": "Invite codes for account sign-up on the Community Solid Server",
+  "repository": "git@github.com:hcientist/css-invites.git",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "lsd:module": "https://linkedsoftwaredependencies.org/bundles/npm/css-invites",
+  "lsd:components": "dist/components/components.jsonld",
+  "lsd:contexts": {
+    "https://linkedsoftwaredependencies.org/bundles/npm/css-invites/^0.1.0/components/context.jsonld": "dist/components/context.jsonld"
+  },
+  "lsd:importPaths": {
+    "https://linkedsoftwaredependencies.org/bundles/npm/css-invites/^0.1.0/components/": "dist/components/",
+    "https://linkedsoftwaredependencies.org/bundles/npm/css-invites/^0.1.0/config/": "config/",
+    "https://linkedsoftwaredependencies.org/bundles/npm/css-invites/^0.1.0/dist/": "dist/"
+  },
+  "scripts": {
+    "build": "bun run build:ts && bun run build:components",
+    "build:ts": "tsc",
+    "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r invites",
+    "start": "node node_modules/@solid/community-server/bin/server.js -m . -c invites-file.json -f .data",
+    "test": "bun test"
+  },
+  "files": ["dist", "config", "templates"],
+  "dependencies": {
+    "@solid/community-server": "^7.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "componentsjs-generator": "^3.1.2",
+    "typescript": "^5.4.5"
+  }
+}

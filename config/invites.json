@@ -1,0 +1,82 @@
+{
+  "@context": [
+    "https://linkedsoftwaredependencies.org/bundles/npm/@solid/community-server/^7.0.0/components/context.jsonld",
+    "https://linkedsoftwaredependencies.org/bundles/npm/css-invites/^0.1.0/components/context.jsonld"
+  ],
+  "@graph": [
+    {
+      "comment": "Invites are stored in CSS's internal key-value storage under /.internal/invites/, keyed by the SHA-256 of the code.",
+      "@id": "urn:css-invites:InviteStore",
+      "@type": "InviteStore",
+      "storage": {
+        "@type": "ContainerPathStorage",
+        "relativePath": "/invites/",
+        "source": { "@id": "urn:solid-server:default:KeyValueStorage" }
+      }
+    },
+
+    {
+      "comment": "Account creation now requires a valid invite code in the request body.",
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:CreateAccountHandler" },
+      "overrideParameters": {
+        "@type": "InviteCreateAccountHandler",
+        "accountStore": { "@id": "urn:solid-server:default:AccountStore" },
+        "cookieStore": { "@id": "urn:solid-server:default:CookieStore" },
+        "inviteStore": { "@id": "urn:css-invites:InviteStore" }
+      }
+    },
+
+    {
+      "comment": "The sign-up page gets an invite code field, prefilled from ?invite=.",
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:RegisterPasswordAccountHtml" },
+      "overrideParameters": {
+        "@type": "PluginHtmlViewEntry",
+        "route": { "@id": "urn:solid-server:default:RegisterPasswordRoute" },
+        "template": "register.html.ejs"
+      }
+    },
+
+    {
+      "comment": "Invite admin API and page at /.account/invites/.",
+      "@id": "urn:css-invites:InviteRoute",
+      "@type": "RelativePathInteractionRoute",
+      "base": { "@id": "urn:solid-server:default:IndexRoute" },
+      "relativePath": "invites/"
+    },
+    {
+      "@id": "urn:solid-server:default:InteractionRouteHandler",
+      "@type": "WaterfallHandler",
+      "handlers": [
+        {
+          "@id": "urn:css-invites:InviteRouter",
+          "@type": "InteractionRouteHandler",
+          "route": { "@id": "urn:css-invites:InviteRoute" },
+          "source": {
+            "@type": "ViewInteractionHandler",
+            "source": {
+              "@id": "urn:css-invites:InviteAdminHandler",
+              "@type": "InviteAdminHandler",
+              "inviteStore": { "@id": "urn:css-invites:InviteStore" },
+              "webIdStore": { "@id": "urn:solid-server:default:WebIdStore" },
+              "registerRoute": { "@id": "urn:solid-server:default:RegisterPasswordRoute" }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "urn:solid-server:default:HtmlViewHandler",
+      "@type": "HtmlViewHandler",
+      "templates": [
+        {
+          "@id": "urn:css-invites:InviteAdminHtml",
+          "@type": "PluginHtmlViewEntry",
+          "route": { "@id": "urn:css-invites:InviteRoute" },
+          "template": "invites.html.ejs"
+        }
+      ]
+    }
+  ]
+}

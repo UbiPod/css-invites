@@ -1,0 +1,107 @@
+<h1>Invites</h1>
+<p class="error" id="error"></p>
+
+<form method="post" id="mainForm">
+  <fieldset>
+    <legend>New invite</legend>
+    <ol>
+      <li>
+        <label for="note">Note (who it's for):</label>
+        <input id="note" type="text" name="note" maxlength="200">
+      </li>
+      <li>
+        <label for="uses">Number of sign-ups:</label>
+        <input id="uses" type="number" name="uses" min="1" max="1000" value="1">
+      </li>
+      <li>
+        <label for="expiresInDays">Expires after (days, blank for never):</label>
+        <input id="expiresInDays" type="number" name="expiresInDays" min="1" max="3650" value="14">
+      </li>
+    </ol>
+  </fieldset>
+  <p class="actions">
+    <button type="submit" name="submit" disabled>Create invite</button>
+    <button type="button" id="account-link">Back to account</button>
+  </p>
+</form>
+
+<div id="created" style="display: none">
+  <h2>Invite created</h2>
+  <p>Send this link. The code is shown only once.</p>
+  <p><code id="created-code"></code></p>
+  <p><a id="created-link" href="" style="word-break: break-all"></a></p>
+</div>
+
+<h2>Existing invites</h2>
+<ul id="invites"></ul>
+
+<script>
+  function describe(invite) {
+    const parts = [ invite.note || '(no note)', `${invite.usesLeft} use(s) left` ];
+    if (invite.expiresAt) {
+      parts.push(`expires ${invite.expiresAt.slice(0, 10)}`);
+    }
+    if (invite.usedBy.length > 0) {
+      parts.push(`used by ${invite.usedBy.length} account(s)`);
+    }
+    if (invite.revoked) {
+      parts.push('revoked');
+    }
+    return `${invite.id}: ${parts.join(', ')}`;
+  }
+
+  async function loadInvites() {
+    const res = await fetch(location.pathname, { headers: { accept: 'application/json' } });
+    const json = await res.json();
+    if (res.status >= 400) {
+      throw new Error(json.message);
+    }
+    const list = document.getElementById('invites');
+    list.replaceChildren();
+    for (const invite of json.invites) {
+      const item = document.createElement('li');
+      item.textContent = describe(invite);
+      if (!invite.revoked && invite.usesLeft > 0) {
+        const revoke = document.createElement('button');
+        revoke.type = 'button';
+        revoke.textContent = 'Revoke';
+        revoke.addEventListener('click', async() => {
+          const r = await postJson(location.pathname, { revoke: invite.id });
+          if (r.status >= 400) {
+            setError((await r.json()).message);
+          }
+          await loadInvites();
+        });
+        item.append(' ', revoke);
+      }
+      list.append(item);
+    }
+  }
+
+  (async() => {
+    const controls = await fetchControls('<%= idpIndex %>');
+    setRedirectClick('account-link', controls.html?.account?.account ?? controls.html.main.login);
+
+    try {
+      await loadInvites();
+    } catch (error) {
+      setError(error.message);
+    }
+
+    addPostListener(async() => {
+      const form = Object.fromEntries(new FormData(document.getElementById('mainForm')));
+      const res = await postJson(location.pathname, form);
+      const json = await res.json();
+      if (res.status >= 400) {
+        throw new Error(json.message);
+      }
+      const link = new URL(json.link, location.href).href;
+      document.getElementById('created-code').textContent = json.code;
+      const anchor = document.getElementById('created-link');
+      anchor.textContent = link;
+      anchor.href = link;
+      document.getElementById('created').style.display = '';
+      await loadInvites();
+    });
+  })();
+</script>
