@@ -2,7 +2,19 @@
   "name": "css-invites",
   "version": "0.1.1",
   "description": "Invite codes for account sign-up on the Community Solid Server",
-  "repository": "git@github.com:hcientist/css-invites.git",
+  "keywords": [
+    "solid",
+    "community-solid-server",
+    "css",
+    "invite",
+    "components.js"
+  ],
+  "homepage": "https://github.com/hcientist/css-invites#readme",
+  "bugs": "https://github.com/hcientist/css-invites/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hcientist/css-invites.git"
+  },
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,9 +33,14 @@
     "build:ts": "tsc",
     "build:components": "componentsjs-generator -s src -c dist/components -i .componentsignore -r invites",
     "start": "node node_modules/@solid/community-server/bin/server.js -m . -c invites-file.json -f .data",
-    "test": "bun test"
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
   },
-  "files": ["dist", "config", "templates"],
+  "files": [
+    "dist",
+    "config",
+    "templates"
+  ],
   "dependencies": {
     "@solid/community-server": "^7.3.0"
   },
@@ -31,5 +48,8 @@
     "@types/node": "^20.14.0",
     "componentsjs-generator": "^3.1.2",
     "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0"
   }
 }

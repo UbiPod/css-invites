@@ -9,6 +9,14 @@ The plugin changes three things in CSS:
 
 Codes look like `K7QM-3XPR-WD9A-H2TC`: 80 random bits, with no 0/O or 1/I, and ignoring case and dashes. Only their SHA-256 hashes are stored, in CSS's internal storage (`/.internal/invites/`), so a copy of the data doesn't reveal usable codes. Each code is shown once, when it's created.
 
+## Install
+
+```
+npm install css-invites
+```
+
+This goes in a project that also depends on `@solid/community-server` 7.x. Run CSS with `-m .` so Components.js finds the plugin. Or skip this and use the Docker image (below).
+
 ## Configure
 
 Add the plugin's config after a stock CSS config:
