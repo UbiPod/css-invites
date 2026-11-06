@@ -5,7 +5,7 @@ Invite codes for account sign-up on the [Community Solid Server](https://github.
 The plugin changes three things in CSS:
 - **Sign-up needs an invite code.** It overrides CSS's `CreateAccountHandler`, so `POST /.account/account/` without a valid `inviteCode` gets 400, and an unknown, used, revoked or expired code gets 403. Everything else (password logins, pods, WebIDs, OIDC) stays stock.
 - **The sign-up page asks for the code.** It gains an invite-code field, prefilled from `?invite=<code>` links.
-- **Admins manage invites at `/.account/invites/`.** Accounts linked to an admin WebID can create invites (with a note, a number of uses and an expiry), list them and revoke them. This works from a small HTML page or as JSON.
+- **Admins manage invites at `/.account/invites/`.** Accounts linked to an admin WebID can create invites (with a note, a number of uses and an expiry), list them and revoke them. This works from a small HTML page or as JSON. Only admins see the page: a visitor who isn't logged in is redirected to the login page, and a logged-in non-admin gets a 404.
 
 Codes look like `K7QM-3XPR-WD9A-H2TC`: 80 random bits, with no 0/O or 1/I, and ignoring case and dashes. Only their SHA-256 hashes are stored, in CSS's internal storage (`/.internal/invites/`), so a copy of the data doesn't reveal usable codes. Each code is shown once, when it's created.
 
@@ -56,7 +56,9 @@ All calls need the admin's account cookie or `Authorization: CSS-Account-Token <
 | `POST /.account/invites/` `{ "note": "for Sam", "uses": 1, "expiresInDays": 14 }` | `{ code, link, invite }`. All fields are optional; the defaults are 1 use and no expiry. |
 | `POST /.account/invites/` `{ "revoke": "<id>" }` | `{ revoked }` |
 
-Not logged in gets 401. Logged in without an admin WebID gets 403.
+The JSON API answers 401 if you're not logged in, and 403 if you're logged in without an admin WebID. The HTML page instead redirects to the login page, or returns a 404.
+
+The page guard works by replacing the handler list of CSS's `urn:solid-server:default:InteractionHandler` with `[InviteAdminHtmlGuard, HtmlViewHandler, LockingInteractionHandler]`. If another plugin also overrides that list, merge the two by hand.
 
 ## Develop
 
@@ -78,6 +80,7 @@ bun test/e2e.ts http://localhost:3999/ SEED-TEST-CODE-0001
 - Invite links.
 - That a 2-use code admits exactly 2 of 3 simultaneous sign-ups.
 - That both HTML pages render.
+- That the invites page redirects visitors who aren't logged in and is a 404 for non-admins.
 
 ## Limits
 

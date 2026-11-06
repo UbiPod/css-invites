@@ -16,6 +16,13 @@
     },
 
     {
+      "comment": "Who may manage invites. Admin WebIDs come from INVITES_ADMIN_WEBIDS, or add an adminWebIds list here.",
+      "@id": "urn:css-invites:InviteAdmins",
+      "@type": "InviteAdmins",
+      "webIdStore": { "@id": "urn:solid-server:default:WebIdStore" }
+    },
+
+    {
       "comment": "Account creation now requires a valid invite code in the request body.",
       "@type": "Override",
       "overrideInstance": { "@id": "urn:solid-server:default:CreateAccountHandler" },
@@ -59,12 +66,35 @@
               "@id": "urn:css-invites:InviteAdminHandler",
               "@type": "InviteAdminHandler",
               "inviteStore": { "@id": "urn:css-invites:InviteStore" },
-              "webIdStore": { "@id": "urn:solid-server:default:WebIdStore" },
-              "registerRoute": { "@id": "urn:solid-server:default:RegisterPasswordRoute" }
+              "registerRoute": { "@id": "urn:solid-server:default:RegisterPasswordRoute" },
+              "admins": { "@id": "urn:css-invites:InviteAdmins" }
             }
           }
         }
       ]
+    },
+    {
+      "comment": [
+        "Put a guard in front of CSS's HTML views so the invites page is only rendered for admins:",
+        "not logged in redirects to the password login page, a non-admin account gets a 404.",
+        "This replaces the handler list of CSS's InteractionHandler, keeping its two stock entries in order."
+      ],
+      "@type": "Override",
+      "overrideInstance": { "@id": "urn:solid-server:default:InteractionHandler" },
+      "overrideParameters": {
+        "@type": "WaterfallHandler",
+        "handlers": [
+          {
+            "@id": "urn:css-invites:InviteAdminHtmlGuard",
+            "@type": "InviteAdminHtmlGuard",
+            "route": { "@id": "urn:css-invites:InviteRoute" },
+            "loginRoute": { "@id": "urn:solid-server:default:LoginPasswordRoute" },
+            "admins": { "@id": "urn:css-invites:InviteAdmins" }
+          },
+          { "@id": "urn:solid-server:default:HtmlViewHandler" },
+          { "@id": "urn:solid-server:default:LockingInteractionHandler" }
+        ]
+      }
     },
     {
       "@id": "urn:solid-server:default:HtmlViewHandler",

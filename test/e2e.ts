@@ -96,8 +96,21 @@ check('a 2-use code admits exactly 2 of 3 simultaneous sign-ups', racers.filter(
 const page = await fetch(`${base}.account/login/password/register/`, { headers: { accept: 'text/html' }});
 check('sign-up page has the invite code field', page.status === 200 && (await page.text()).includes('id="inviteCode"'));
 
-const invitesPage = await fetch(invitesUrl, { headers: { accept: 'text/html' }});
-check('invites admin page renders', invitesPage.status === 200 && (await invitesPage.text()).includes('Create invite'));
+const html = (token?: string): Promise<Response> => fetch(invitesUrl, {
+  redirect: 'manual',
+  headers: { accept: 'text/html', ...token ? { authorization: `CSS-Account-Token ${token}` } : {}},
+});
+const invitesPage = await html(admin);
+check('invites page renders for an admin', invitesPage.status === 200 && (await invitesPage.text()).includes('Create invite'));
+const anonPage = await html();
+check('invites page redirects a visitor who is not logged in to the login page',
+  anonPage.status === 302 && anonPage.headers.get('location') === `${base}.account/login/password/`,
+  `${anonPage.status} ${anonPage.headers.get('location')}`);
+const friendPage = await html(friend);
+const friendBody = await friendPage.text();
+check('invites page is a 404 for a non-admin account', friendPage.status === 404 && !friendBody.includes('Create invite'), String(friendPage.status));
+const otherPage = await fetch(`${base}.account/login/password/`, { headers: { accept: 'text/html' }});
+check('other HTML pages still render', otherPage.status === 200, String(otherPage.status));
 
 console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

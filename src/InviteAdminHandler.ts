@@ -3,7 +3,6 @@ import type {
   JsonInteractionHandlerInput,
   JsonRepresentation,
   JsonView,
-  WebIdStore,
 } from '@solid/community-server';
 import {
   BadRequestHttpError,
@@ -11,6 +10,7 @@ import {
   JsonInteractionHandler,
   UnauthorizedHttpError,
 } from '@solid/community-server';
+import type { InviteAdmins } from './InviteAdmins';
 import type { Invite, InviteStore } from './InviteStore';
 
 /**
@@ -21,33 +21,24 @@ import type { Invite, InviteStore } from './InviteStore';
  *   The code is only ever shown in this response.
  * - POST `{ revoke: "<invite id>" }`: revokes an invite.
  *
- * The caller must be logged in to an account linked to one of the admin WebIDs.
+ * The caller must be logged in to an account linked to one of the admin WebIDs (see {@link InviteAdmins}).
+ * Not logged in gets 401, a non-admin account gets 403.
  */
 export class InviteAdminHandler extends JsonInteractionHandler implements JsonView {
   private readonly inviteStore: InviteStore;
-  private readonly webIdStore: WebIdStore;
   private readonly registerRoute: InteractionRoute;
-  private readonly adminWebIds: Set<string>;
+  private readonly admins: InviteAdmins;
 
   /**
    * @param inviteStore - Where invites are kept.
-   * @param webIdStore - Used to find the WebIDs linked to the calling account.
    * @param registerRoute - The sign-up page, used to build invite links.
-   * @param adminWebIds - WebIDs allowed to manage invites. Entries in the `INVITES_ADMIN_WEBIDS`
-   *   environment variable (comma separated) are added to these.
+   * @param admins - Decides who may manage invites.
    */
-  public constructor(
-    inviteStore: InviteStore,
-    webIdStore: WebIdStore,
-    registerRoute: InteractionRoute,
-    adminWebIds: string[] = [],
-  ) {
+  public constructor(inviteStore: InviteStore, registerRoute: InteractionRoute, admins: InviteAdmins) {
     super();
     this.inviteStore = inviteStore;
-    this.webIdStore = webIdStore;
     this.registerRoute = registerRoute;
-    const fromEnv = (process.env.INVITES_ADMIN_WEBIDS ?? '').split(',');
-    this.adminWebIds = new Set([ ...adminWebIds, ...fromEnv ].map((id): string => id.trim()).filter(Boolean));
+    this.admins = admins;
   }
 
   public async getView({ accountId }: JsonInteractionHandlerInput): Promise<JsonRepresentation> {
@@ -84,12 +75,11 @@ export class InviteAdminHandler extends JsonInteractionHandler implements JsonVi
     if (!accountId) {
       throw new UnauthorizedHttpError('Log in to manage invites.');
     }
-    const links = await this.webIdStore.findLinks(accountId);
-    const admin = links.find(({ webId }): boolean => this.adminWebIds.has(webId));
+    const admin = await this.admins.adminWebId(accountId);
     if (!admin) {
       throw new ForbiddenHttpError('This account is not an invite admin.');
     }
-    return admin.webId;
+    return admin;
   }
 }
 

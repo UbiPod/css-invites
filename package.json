@@ -1,6 +1,6 @@
 {
   "name": "css-invites",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Invite codes for account sign-up on the Community Solid Server",
   "repository": "git@github.com:hcientist/css-invites.git",
   "license": "MIT",
